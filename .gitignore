@@ -3,6 +3,7 @@
 # Node artifact files
 node_modules/
 dist/
+.env.development
 
 # Compiled Java class files
 *.class
