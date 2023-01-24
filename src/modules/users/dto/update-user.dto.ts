@@ -8,9 +8,9 @@ export class UpdateUserDto {
   @IsOptional()
   last_name?: string
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsEmail()
-  email: string
+  email?: string
 
   @IsOptional()
   refresh_token?: string

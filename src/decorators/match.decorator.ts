@@ -3,10 +3,9 @@ import {
   registerDecorator,
   ValidationArguments,
   ValidationOptions,
-  ValidationConstraint,
-  ValidationConstraintInterface,
-} from 'class-transformer'
-import { ValidatorConstraint } from 'class-validator'
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+} from 'class-validator'
 
 export const Match = <T>(type: ClassConstructor<T>, property: (o: T) => any, validationOptions?: ValidationOptions) => {
   return (object: any, propertyName: string) => {
@@ -21,7 +20,7 @@ export const Match = <T>(type: ClassConstructor<T>, property: (o: T) => any, val
 }
 
 @ValidatorConstraint({ name: 'Match' })
-export class MatchConstraint implements ValidationConstraintInterface {
+export class MatchConstraint implements ValidatorConstraintInterface {
   validate(value: any, args: ValidationArguments) {
     const [fn] = args.constraints
     return fn(args.object) === value
@@ -29,6 +28,6 @@ export class MatchConstraint implements ValidationConstraintInterface {
 
   defaultMessage(args: ValidationArguments) {
     const [constraintProperty]: (() => any)[] = args.constraints
-    return `${constraintProperty} and ${args.propertyName} don't match`
+    return `${constraintProperty} and ${args.property} don't match`
   }
 }
