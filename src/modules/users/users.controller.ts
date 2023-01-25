@@ -24,7 +24,7 @@ import { UpdateUserDto } from './dto/update-user.dto'
 import { UsersService } from './users.service'
 
 @Controller('users')
-@UseInterceptors(ClassSerializerInterceptor) //if you don't have this, everything from is user.entity.ts is excluded
+@UseInterceptors(ClassSerializerInterceptor)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

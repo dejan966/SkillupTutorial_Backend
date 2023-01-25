@@ -19,3 +19,6 @@ Content-Type: application/json
   	"email": "john@gmail.com",
   	"password": "John123!"
 }
+
+### GET /users
+GET http://localhost:8080/users HTTP/1.1

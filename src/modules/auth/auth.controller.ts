@@ -15,7 +15,7 @@ import { GetCurrentUserId } from 'decorators/get-current-user-id.decorator'
 import { GetCurrentUser } from 'decorators/get-current-user.decorator'
 import { Public } from 'decorators/public.decorator'
 import { User } from 'entities/user.entity'
-import { Request } from 'express'
+import { Request, Response } from 'express'
 import { RequestWithUser } from 'interfaces/auth.interface'
 import { UserData } from 'interfaces/user.interface'
 import { AuthService } from './auth.service'
@@ -44,7 +44,6 @@ export class AuthController {
     return this.authService.login(req.user, res)
   }
 
-  @Public()
   @UseGuards(JwtAuthGuard)
   @Post('signout')
   @HttpCode(HttpStatus.OK)
@@ -52,7 +51,6 @@ export class AuthController {
     return this.authService.signout(userid, res)
   }
 
-  @Public()
   @UseGuards(JwtRefreshAuthGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.ACCEPTED)

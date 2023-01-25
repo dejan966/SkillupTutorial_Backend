@@ -2,15 +2,13 @@ import { Injectable } from '@nestjs/common'
 import { PassportStrategy } from '@nestjs/passport'
 import { User } from 'entities/user.entity'
 import { Strategy, ExtractJwt } from 'passport-jwt'
-
-import { AuthService } from 'auth/auth.service'
 import { UsersService } from 'modules/users/users.service'
 import { ConfigService } from '@nestjs/config'
 import { Request } from 'express'
 import { TokenPayload } from 'interfaces/auth.interface'
 
 @Injectable()
-export class LocalStrategy extends PassportStrategy(Strategy, 'jwt') {
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(private usersService: UsersService, configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([

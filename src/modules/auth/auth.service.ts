@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import { hash, compareHash } from 'utils/bcrypt'
@@ -7,7 +13,7 @@ import { UserData } from 'interfaces/user.interface'
 import Logging from 'library/Logging'
 import { UsersService } from 'modules/users/users.service'
 import { RegisterUserDto } from './dto/register-user.dto'
-import { Response } from 'express'
+import { Response, Request } from 'express'
 import { CookieType, JwtType, TokenPayload } from 'interfaces/auth.interface'
 import { access } from 'fs'
 import { PostgresErrorCode } from 'helpers/postgresErrorCode.enum'
@@ -57,12 +63,48 @@ export class AuthService {
     }
   }
 
+  async refreshTokens(req: Request): Promise<User> {
+    const user = await this.usersService.findBy({ refresh_token: req.cookies.refresh_token })
+    if (!user) {
+      throw new ForbiddenException()
+    }
+    try {
+      await this.jwtService.verifyAsync(user.refresh_token, {
+        secret: this.configService.get('JWT_REFRESH_SECRET'),
+      })
+    } catch (error) {
+      Logging.error(error)
+      throw new UnauthorizedException('Something went wrong while refreshing tokens')
+    }
+    const token = await this.generateToken(user.id, user.email, JwtType.ACCESS_TOKEN)
+    const cookie = await this.generateCookie(token, CookieType.ACCESS_TOKEN)
+
+    try {
+      req.res.setHeader('Set-Cookie', cookie)
+    } catch (error) {
+      Logging.error(error)
+      throw new InternalServerErrorException('Something went wrong while setting cookies into the response header')
+    }
+    return user
+  }
+
   async updateRtHash(userId: string, rt: string): Promise<void> {
     try {
       await this.usersService.update(userId, { refresh_token: rt })
     } catch (error) {
       Logging.error(error)
       throw new InternalServerErrorException('Something went wrong while updating user refresh token')
+    }
+  }
+
+  async signout(userId: string, res: Response): Promise<void> {
+    const user = await this.usersService.findById(userId)
+    await this.usersService.update(user.id, { refresh_token: null })
+    try {
+      res.setHeader('Set-Cookie', this.getCookiesForSignOut()).sendStatus(200)
+    } catch (error) {
+      Logging.error(error)
+      throw new InternalServerErrorException('Something went wrong while setting cookies into response header')
     }
   }
 
