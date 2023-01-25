@@ -1,18 +1,23 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
+import { hash, compareHash } from 'utils/bcrypt'
 import { User } from 'entities/user.entity'
 import { UserData } from 'interfaces/user.interface'
 import Logging from 'library/Logging'
 import { UsersService } from 'modules/users/users.service'
-import { compareHash } from 'utils/bcrypt'
+import { RegisterUserDto } from './dto/register-user.dto'
+import { Response } from 'express'
+import { CookieType, JwtType, TokenPayload } from 'interfaces/auth.interface'
+import { access } from 'fs'
+import { PostgresErrorCode } from 'helpers/postgresErrorCode.enum'
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-    private configServie: ConfigService,
+    private configService: ConfigService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -28,6 +33,39 @@ export class AuthService {
     return user
   }
 
+  async register(registerUserDto: RegisterUserDto): Promise<User> {
+    const hashedPassword: string = await hash(registerUserDto.password)
+    const user = await this.usersService.create({
+      ...registerUserDto,
+      password: hashedPassword,
+    })
+    return user
+  }
+
+  async login(userFromRequest: User, res: Response): Promise<void> {
+    const user = await this.usersService.findById(userFromRequest.id)
+    const accessToken = await this.generateToken(user.id, user.email, JwtType.ACCESS_TOKEN)
+    const accessTokenCookie = await this.generateCookie(accessToken, CookieType.ACCESS_TOKEN)
+    const refreshToken = await this.generateToken(user.id, user.email, JwtType.REFRESH_TOKEN)
+    const refreshTokenCookie = await this.generateCookie(refreshToken, CookieType.REFRESH_TOKEN)
+    try {
+      await this.updateRtHash(user.id, refreshToken)
+      res.setHeader('Set-Cookie', [accessTokenCookie, refreshTokenCookie]).json({ ...user })
+    } catch (error) {
+      Logging.error(error)
+      throw new InternalServerErrorException('Something went wrong while setting cookies into response header')
+    }
+  }
+
+  async updateRtHash(userId: string, rt: string): Promise<void> {
+    try {
+      await this.usersService.update(userId, { refresh_token: rt })
+    } catch (error) {
+      Logging.error(error)
+      throw new InternalServerErrorException('Something went wrong while updating user refresh token')
+    }
+  }
+
   async getUserIfRefreshTokenMatches(refreshToken: string, userId: string): Promise<UserData> {
     const user = await this.usersService.findById(userId)
     const isRefreshTokenMatching = await compareHash(refreshToken, user.refresh_token)
@@ -37,5 +75,62 @@ export class AuthService {
         email: user.email,
       }
     }
+  }
+
+  async generateToken(userId: string, email: string, type: JwtType): Promise<string> {
+    try {
+      const payload: TokenPayload = { sub: userId, name: email, type }
+      let token: string
+      switch (type) {
+        case JwtType.ACCESS_TOKEN:
+          token = await this.jwtService.signAsync(payload)
+          break
+        case JwtType.REFRESH_TOKEN:
+          token = await this.jwtService.signAsync(payload, {
+            secret: this.configService.get('JWT_REFRESH_SECRET'),
+            expiresIn: `${this.configService.get('JWT_REFRESH_SECRET_EXPIRESS')}ss`,
+          })
+          break
+        default:
+          throw new BadRequestException('Access denied')
+      }
+      return token
+    } catch (error) {
+      Logging.error(error)
+      if (error?.code === PostgresErrorCode.UniqueViolation) {
+        throw new BadRequestException('User with that email already exists')
+      }
+      throw new InternalServerErrorException('Something went wrong while generating a new token')
+    }
+  }
+  async generateCookie(token: string, type: CookieType): Promise<string> {
+    try {
+      let cookie: string
+      switch (type) {
+        case CookieType.ACCESS_TOKEN:
+          cookie = `access_token=${token}; HttpOnly; Path =/; Max-Age=${this.configService.get(
+            'JWT_SECRET_EXPIRES',
+          )}; SameSite:strict`
+          break
+        case CookieType.REFRESH_TOKEN:
+          cookie = `refresh_token=${token}; HttpOnly; Path =/; Max-Age=${this.configService.get(
+            'JWT_REFRESH_SECRET_EXPIRES',
+          )}; SameSite:strict`
+          break
+        default:
+          throw new BadRequestException('Access denied')
+      }
+      return cookie
+    } catch (error) {
+      Logging.error(error)
+      if (error?.code === PostgresErrorCode.UniqueViolation) {
+        throw new BadRequestException('User with that email already exists')
+      }
+      throw new InternalServerErrorException('Something went wrong while generating a new token')
+    }
+  }
+
+  getCookiesForSignOut(): string[] {
+    return ['access_token=${token}; HttpOnly; Path =/; Max-Age=;', 'refresh_token=; HttpOnly; Path =/; Max-Age=0']
   }
 }
