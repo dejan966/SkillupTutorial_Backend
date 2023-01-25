@@ -175,4 +175,9 @@ export class AuthService {
   getCookiesForSignOut(): string[] {
     return ['access_token=${token}; HttpOnly; Path =/; Max-Age=;', 'refresh_token=; HttpOnly; Path =/; Max-Age=0']
   }
+
+  async getUserId(request: Request): Promise<string> {
+    const user = request.user as User
+    return user.id
+  }
 }
