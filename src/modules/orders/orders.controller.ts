@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common'
 import { Response } from 'express'
 import { PaginatedResult } from 'interfaces/paginated-result.interface'
-
 import { OrdersService } from './orders.service'
 
 @Controller('orders')
