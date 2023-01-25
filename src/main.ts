@@ -1,10 +1,10 @@
 import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import cookieParser from 'cookie-parser'
-
-import { AppModule } from './modules/app.module'
 import express from 'express'
 import Logging from 'library/Logging'
+
+import { AppModule } from './modules/app.module'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {

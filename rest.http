@@ -24,6 +24,12 @@ Content-Type: application/json
 ### GET /users
 GET http://localhost:8080/users HTTP/1.1
 
+### GET /orders
+GET http://localhost:8080/orders HTTP/1.1
+
+### GET /orders/chart
+GET http://localhost:8080/orders/chart HTTP/1.1
+
 ### GET /permissions
 GET http://localhost:8080/permissions HTTP/1.1
 
