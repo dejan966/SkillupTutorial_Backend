@@ -7,6 +7,9 @@ import { LoggerMiddleware } from 'middleware/logger.middleware'
 import { DatabaseModule } from './database/database.module'
 import { UsersModule } from './users/users.module'
 import { AuthModule } from './auth/auth.module'
+import { RolesModule } from './roles/roles.module'
+import { PermissionsModule } from 'modules/permissions/permissions.module'
+import { PermissionsGuard } from 'modules/permissions/guards/permission.guard'
 
 @Module({
   imports: [
@@ -18,12 +21,18 @@ import { AuthModule } from './auth/auth.module'
     DatabaseModule,
     UsersModule,
     AuthModule,
+    RolesModule,
+    PermissionsModule,
   ],
   controllers: [],
   providers: [
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
     },
   ],
 })

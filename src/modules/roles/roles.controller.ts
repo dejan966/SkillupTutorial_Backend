@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common'
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common'
 import { Role } from 'entities/role.entity'
 import { User } from 'entities/user.entity'
 import { PaginatedResult } from 'interfaces/paginated-result.interface'
@@ -20,16 +32,16 @@ export class RolesController {
     return this.rolesService.findById(id, ['permissions'])
   }
 
-  @Post('')
+  @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createRoleDto: CreateUpdateRoleDto,
     @Body('permissions') permissionsIds: string[],
   ): Promise<Role> {
     /*
-                [1,2]
-                [{id:1}, {id:2}]
-            */
+        [1,2]
+        [{id:1}, {id:2}]
+    */
     return this.rolesService.create(
       createRoleDto,
       permissionsIds.map((id) => ({

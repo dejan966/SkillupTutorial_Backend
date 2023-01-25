@@ -68,6 +68,7 @@ export class AuthController {
       last_name: user.last_name,
       email: user.email,
       avatar: user.avatar,
+      role: user.role?.id ? { id: user.role?.id, name: user.role?.name } : null,
     }
   }
 }

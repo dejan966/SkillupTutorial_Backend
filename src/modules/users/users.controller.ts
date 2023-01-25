@@ -15,6 +15,7 @@ import {
 import { UploadedFile } from '@nestjs/common/decorators/index'
 import { BadRequestException } from '@nestjs/common/exceptions/bad-request.exception'
 import { FileInterceptor } from '@nestjs/platform-express'
+import { HasPermission } from 'decorators/has-permission.decorator'
 import { User } from 'entities/user.entity'
 import { isFileExtensionSafe, removeFile, saveImageToStorage } from 'helpers/imageStorage'
 import { PaginatedResult } from 'interfaces/paginated-result.interface'
@@ -29,6 +30,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @HasPermission('users')
   @HttpCode(HttpStatus.OK)
   async findAll(@Query('page') page: number): Promise<PaginatedResult> {
     return this.usersService.paginate(page, ['role'])
